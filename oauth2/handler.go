@@ -4,6 +4,7 @@
 package oauth2
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -49,6 +50,8 @@ const (
 	TokenPath             = "/oauth2/token" // #nosec G101
 	AuthPath              = "/oauth2/auth"
 	LogoutPath            = "/oauth2/sessions/logout"
+	DefaultDevicePath     = "/oauth2/fallbacks/device"
+	DefaultPostDevicePath = "/oauth2/fallbacks/device/done"
 
 	VerifiableCredentialsPath = "/credentials"
 	UserinfoPath              = "/userinfo"
@@ -59,6 +62,10 @@ const (
 	IntrospectPath   = "/oauth2/introspect"
 	RevocationPath   = "/oauth2/revoke"
 	DeleteTokensPath = "/oauth2/tokens" // #nosec G101
+
+	// Device Grant Handler
+	DeviceAuthPath  = "/oauth2/device/auth"
+	DeviceGrantPath = "/device"
 )
 
 type Handler struct {
@@ -81,6 +88,14 @@ func (h *Handler) SetRoutes(admin *httprouterx.RouterAdmin, public *httprouterx.
 	public.POST(AuthPath, h.oAuth2Authorize)
 	public.GET(LogoutPath, h.performOidcFrontOrBackChannelLogout)
 	public.POST(LogoutPath, h.performOidcFrontOrBackChannelLogout)
+
+	public.GET(DefaultDevicePath, h.fallbackHandler("", "", http.StatusOK, config.KeyDeviceURL))
+	public.GET(DefaultPostDevicePath, h.fallbackHandler(
+		"You successfully authenticated on your device!",
+		"The Default Post Device URL is not set which is why you are seeing this fallback page. Your device login request however succeeded.",
+		http.StatusOK,
+		config.KeyDeviceDoneURL,
+	))
 
 	public.GET(DefaultLoginPath, h.fallbackHandler("", "", http.StatusOK, config.KeyLoginURL))
 	public.GET(DefaultConsentPath, h.fallbackHandler("", "", http.StatusOK, config.KeyConsentURL))
@@ -106,6 +121,41 @@ func (h *Handler) SetRoutes(admin *httprouterx.RouterAdmin, public *httprouterx.
 
 	admin.POST(IntrospectPath, h.introspectOAuth2Token)
 	admin.DELETE(DeleteTokensPath, h.deleteOAuth2Token)
+
+	public.Handler("POST", DeviceAuthPath, corsMiddleware(h.DeviceAuthHandler))
+	public.Handler("GET", h.c.SelfDeviceURL(context.Background()).Path, corsMiddleware(h.DeviceGranHandler))
+}
+
+func (h *Handler) DeviceGranHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	err := h.r.ConsentStrategy().ForwardDeviceGrantRequest(w, r)
+	if err != nil {
+		h.r.Writer().WriteError(w, r, err)
+	}
+}
+
+func (h *Handler) DeviceAuthHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var ctx = r.Context()
+	request, err := h.r.OAuth2Provider().NewDeviceAuthorizeRequest(ctx, r)
+
+	if err != nil {
+		h.r.Writer().WriteError(w, r, err)
+		return
+	}
+
+	var session = &Session{
+		DefaultSession: &openid.DefaultSession{
+			Headers: &jwt.Headers{}},
+	}
+
+	request.SetSession(session)
+	resp, err := h.r.OAuth2Provider().NewDeviceAuthorizeResponse(ctx, request)
+
+	if err != nil {
+		h.r.Writer().WriteError(w, r, err)
+		return
+	}
+	h.r.OAuth2Provider().WriteDeviceAuthorizeResponse(w, request, resp)
 }
 
 // swagger:route GET /oauth2/sessions/logout oidc revokeOidcSession
@@ -254,6 +304,9 @@ type oidcConfiguration struct {
 	// required: true
 	// example: https://playground.ory.sh/ory-hydra/public/oauth2/token
 	TokenURL string `json:"token_endpoint"`
+
+	// URL of the authorization server's device authorization endpoint
+	DeviceAuthorisationEndpoint string `json:"device_authorization_endpoint"`
 
 	// OpenID Connect Well-Known JSON Web Keys URL
 	//
@@ -485,6 +538,7 @@ func (h *Handler) discoverOidcConfiguration(w http.ResponseWriter, r *http.Reque
 		JWKsURI:                                h.c.JWKSURL(ctx).String(),
 		RevocationEndpoint:                     urlx.AppendPaths(h.c.IssuerURL(ctx), RevocationPath).String(),
 		RegistrationEndpoint:                   h.c.OAuth2ClientRegistrationURL(ctx).String(),
+		DeviceAuthorisationEndpoint:            h.c.OAuth2DeviceAuthorisationURL(ctx).String(),
 		SubjectTypes:                           h.c.SubjectTypesSupported(ctx),
 		ResponseTypes:                          []string{"code", "code id_token", "id_token", "token id_token", "token", "token id_token code"},
 		ClaimsSupported:                        h.c.OIDCDiscoverySupportedClaims(ctx),
@@ -494,7 +548,7 @@ func (h *Handler) discoverOidcConfiguration(w http.ResponseWriter, r *http.Reque
 		IDTokenSigningAlgValuesSupported:       []string{key.Algorithm},
 		IDTokenSignedResponseAlg:               []string{key.Algorithm},
 		UserinfoSignedResponseAlg:              []string{key.Algorithm},
-		GrantTypesSupported:                    []string{"authorization_code", "implicit", "client_credentials", "refresh_token"},
+		GrantTypesSupported:                    []string{"authorization_code", "implicit", "client_credentials", "refresh_token", "refresh_token", "urn:ietf:params:oauth:grant-type:device_code"},
 		ResponseModesSupported:                 []string{"query", "fragment"},
 		UserinfoSigningAlgValuesSupported:      []string{"none", key.Algorithm},
 		RequestParameterSupported:              true,

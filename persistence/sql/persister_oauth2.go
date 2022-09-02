@@ -56,11 +56,13 @@ type (
 )
 
 const (
-	sqlTableOpenID  tableName = "oidc"
-	sqlTableAccess  tableName = "access"
-	sqlTableRefresh tableName = "refresh"
-	sqlTableCode    tableName = "code"
-	sqlTablePKCE    tableName = "pkce"
+	sqlTableOpenID     tableName = "oidc"
+	sqlTableAccess     tableName = "access"
+	sqlTableRefresh    tableName = "refresh"
+	sqlTableCode       tableName = "code"
+	sqlTablePKCE       tableName = "pkce"
+	sqlTableDeviceCode tableName = "device_code"
+	sqlTableUserCode   tableName = "user_code"
 )
 
 func (r OAuth2RequestSQL) TableName() string {
@@ -242,10 +244,18 @@ func (p *Persister) findSessionBySignature(ctx context.Context, signature string
 		if err != nil {
 			return nil, err
 		}
-		if table == sqlTableCode {
+
+		switch table {
+		case sqlTableCode:
 			return fr, errorsx.WithStack(fosite.ErrInvalidatedAuthorizeCode)
+		case sqlTableDeviceCode:
+			return fr, errorsx.WithStack(fosite.ErrInvalidatedDeviceCode)
+
+		case sqlTableUserCode:
+			return fr, errorsx.WithStack(fosite.ErrInvalidatedUserCode)
+		default:
+			return fr, errorsx.WithStack(fosite.ErrInactiveToken)
 		}
-		return fr, errorsx.WithStack(fosite.ErrInactiveToken)
 	}
 
 	return r.toRequest(ctx, session, p)
@@ -545,4 +555,30 @@ func (p *Persister) DeleteAccessTokens(ctx context.Context, clientID string) (er
 	return sqlcon.HandleError(
 		p.QueryWithNetwork(ctx).Where("client_id=?", clientID).Delete(&OAuth2RequestSQL{Table: sqlTableAccess}),
 	)
+}
+
+func (p *Persister) CreateDeviceCodeSession(ctx context.Context, signature string, req fosite.Requester) error {
+	err := p.createSession(ctx, signature, req, sqlTableDeviceCode)
+	return err
+}
+
+func (p *Persister) GetDeviceCodeSession(ctx context.Context, signature string, req fosite.Session) (fosite.Requester, error) {
+	return p.findSessionBySignature(ctx, signature, req, sqlTableDeviceCode)
+}
+
+func (p *Persister) DeleteDeviceCodeSession(ctx context.Context, signature string) error {
+	return p.deleteSessionBySignature(ctx, signature, sqlTableDeviceCode)
+}
+
+func (p *Persister) CreateUserCodeSession(ctx context.Context, signature string, req fosite.Requester) error {
+	err := p.createSession(ctx, signature, req, sqlTableUserCode)
+	return err
+}
+
+func (p *Persister) GetUserCodeSession(ctx context.Context, signature string, req fosite.Session) (fosite.Requester, error) {
+	return p.findSessionBySignature(ctx, signature, req, sqlTableUserCode)
+}
+
+func (p *Persister) DeleteUserCodeSession(ctx context.Context, signature string) error {
+	return p.deleteSessionBySignature(ctx, signature, sqlTableUserCode)
 }

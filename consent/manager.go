@@ -8,6 +8,7 @@ import (
 
 	"github.com/gofrs/uuid"
 
+	"github.com/ory/fosite"
 	"github.com/ory/hydra/v2/client"
 	"github.com/ory/hydra/v2/flow"
 )
@@ -60,6 +61,11 @@ type (
 		AcceptLogoutRequest(ctx context.Context, challenge string) (*flow.LogoutRequest, error)
 		RejectLogoutRequest(ctx context.Context, challenge string) error
 		VerifyAndInvalidateLogoutRequest(ctx context.Context, verifier string) (*flow.LogoutRequest, error)
+
+		CreateDeviceGrantRequest(ctx context.Context, req *DeviceGrantRequest) error
+		AcceptDeviceGrantRequest(ctx context.Context, challenge string, user_code string, client_id string, requested_scopes fosite.Arguments, requested_aud fosite.Arguments) (*DeviceGrantRequest, error)
+		GetDeviceGrantRequestByVerifier(ctx context.Context, verifier string) (*DeviceGrantRequest, error)
+		VerifyAndInvalidateDeviceGrantRequest(ctx context.Context, verifier string) (*DeviceGrantRequest, error)
 	}
 
 	ManagerProvider interface {

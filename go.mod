@@ -1,8 +1,6 @@
 module github.com/ory/hydra/v2
 
-go 1.21
-
-toolchain go1.21.0
+go 1.21.1
 
 replace (
 	github.com/jackc/pcmock => github.com/jackc/pgmock v0.0.0-20210724152146-4ad1a8207f65
@@ -11,6 +9,8 @@ replace (
 )
 
 replace github.com/ory/hydra-client-go/v2 => ./internal/httpclient
+
+replace github.com/ory/fosite => github.com/BuzzBumbleBee/fosite v0.0.0-20231124164728-b1fbd361a56b
 
 require (
 	github.com/ThalesIgnite/crypto11 v1.2.5

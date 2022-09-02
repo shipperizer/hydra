@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ory/hydra/v2/flow"
@@ -38,6 +39,7 @@ const (
 	ConsentPath  = "/oauth2/auth/requests/consent"
 	LogoutPath   = "/oauth2/auth/requests/logout"
 	SessionsPath = "/oauth2/auth/sessions"
+	DevicePath   = "/oauth2/auth/requests/device"
 )
 
 func NewHandler(
@@ -58,7 +60,11 @@ func (h *Handler) SetRoutes(admin *httprouterx.RouterAdmin) {
 	admin.GET(ConsentPath, h.getOAuth2ConsentRequest)
 	admin.PUT(ConsentPath+"/accept", h.acceptOAuth2ConsentRequest)
 	admin.PUT(ConsentPath+"/reject", h.rejectOAuth2ConsentRequest)
-
+	adminV
+	adminV
+	adminV	adminV
+	adminV
+	adminV
 	admin.DELETE(SessionsPath+"/login", h.revokeOAuth2LoginSessions)
 	admin.GET(SessionsPath+"/consent", h.listOAuth2ConsentSessions)
 	admin.DELETE(SessionsPath+"/consent", h.revokeOAuth2ConsentSessions)
@@ -66,6 +72,7 @@ func (h *Handler) SetRoutes(admin *httprouterx.RouterAdmin) {
 	admin.GET(LogoutPath, h.getOAuth2LogoutRequest)
 	admin.PUT(LogoutPath+"/accept", h.acceptOAuth2LogoutRequest)
 	admin.PUT(LogoutPath+"/reject", h.rejectOAuth2LogoutRequest)
+	admin.PUT(DevicePath+"/verify", h.verifyUserCodeRequest)
 }
 
 // Revoke OAuth 2.0 Consent Session Parameters
@@ -1036,4 +1043,86 @@ func (h *Handler) getOAuth2LogoutRequest(w http.ResponseWriter, r *http.Request,
 	}
 
 	h.r.Writer().Write(w, r, request)
+}
+
+// swagger:parameters verifyUserCodeRequest
+type swaggerDeviceGrantVerifyUserCodeRequest struct {
+	// in: query
+	// required: true
+	Challenge string `json:"device_challenge"`
+
+	// in: body
+	Body DeviceGrantVerifyUserCodeRequest
+}
+
+// swagger:route PUT /oauth2/auth/requests/device/verify admin verifyUserCodeRequest
+//
+// # Verifies a device grant request
+// Verifies a device grant request
+//
+//	Consumes:
+//	- application/json
+//
+//	Produces:
+//	- application/json
+//
+//	Schemes: http, https
+//
+//	Responses:
+//	  200: completedRequest
+//	  404: jsonError
+//	  500: jsonError
+func (h *Handler) verifyUserCodeRequest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	challenge := stringsx.Coalesce(
+		r.URL.Query().Get("device_challenge"),
+		r.URL.Query().Get("challenge"),
+	)
+	if challenge == "" {
+		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint(`Query parameter 'challenge' is not defined but should have been.`)))
+		return
+	}
+
+	var p DeviceGrantVerifyUserCodeRequest
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&p); err != nil {
+		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithWrap(err).WithHintf("Unable to decode body because: %s", err)))
+		return
+	}
+
+	if p.UserCode == "" {
+		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("Field 'user_code' must not be empty.")))
+		return
+	}
+
+	userCodeHash := h.r.OAuth2HMACStrategy().UserCodeSignature(r.Context(), p.UserCode)
+	req, err := h.r.OAuth2Storage().GetUserCodeSession(r.Context(), userCodeHash, &fosite.DefaultSession{})
+	if err != nil {
+		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrNotFound.WithHint(`User code session not found`)))
+		return
+	}
+
+	client_id := req.GetClient().GetID()
+
+	grantRequest, err := h.r.ConsentManager().AcceptDeviceGrantRequest(r.Context(), challenge, p.UserCode, client_id, req.GetRequestedScopes(), req.GetRequestedAudience())
+
+	if err != nil {
+		h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
+		return
+	}
+
+	// Get and join the list of scopes requested from the device
+	var scopes []string = req.GetRequestedScopes()
+	scope_string := strings.Join(scopes, " ")
+
+	// As we dont have a redirectURI we know of, just pick the 1st one the client supports
+	response_redirect := ""
+	if len(req.GetClient().GetRedirectURIs()) > 0 {
+		response_redirect = req.GetClient().GetRedirectURIs()[0]
+	}
+
+	h.r.Writer().Write(w, r, &RequestHandlerResponse{
+		RedirectTo: urlx.SetQuery(h.c.OAuth2AuthURL(r.Context()), url.Values{"state": {"fake-state"}, "device_verifier": {grantRequest.Verifier}, "client_id": {client_id}, "redirect_uri": {response_redirect}, "response_type": {"device_code"}, "scope": {scope_string}}).String(),
+	})
 }

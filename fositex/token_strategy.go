@@ -86,3 +86,27 @@ func genericSignature(token string) string {
 		return ""
 	}
 }
+
+func (t TokenStrategy) DeviceCodeSignature(ctx context.Context, token string) string {
+	return t.hmac.DeviceCodeSignature(ctx, token)
+}
+
+func (t *TokenStrategy) GenerateDeviceCode() (token string, err error) {
+	return t.hmac.GenerateDeviceCode()
+}
+
+func (t *TokenStrategy) ValidateDeviceCode(context context.Context, r fosite.Requester, code string) (err error) {
+	return t.hmac.ValidateDeviceCode(context, r, code)
+}
+
+func (t TokenStrategy) UserCodeSignature(ctx context.Context, token string) string {
+	return t.hmac.UserCodeSignature(ctx, token)
+}
+
+func (t *TokenStrategy) GenerateUserCode() (string, error) {
+	return t.hmac.GenerateUserCode()
+}
+
+func (t *TokenStrategy) ValidateUserCode(context context.Context, r fosite.Requester, code string) (err error) {
+	return t.hmac.ValidateUserCode(context, r, code)
+}

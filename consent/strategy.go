@@ -23,4 +23,5 @@ type Strategy interface {
 	HandleOpenIDConnectLogout(ctx context.Context, w http.ResponseWriter, r *http.Request) (*flow.LogoutResult, error)
 	HandleHeadlessLogout(ctx context.Context, w http.ResponseWriter, r *http.Request, sid string) error
 	ObfuscateSubjectIdentifier(ctx context.Context, cl fosite.Client, subject, forcedIdentifier string) (string, error)
+	ForwardDeviceGrantRequest(w http.ResponseWriter, r *http.Request) error
 }

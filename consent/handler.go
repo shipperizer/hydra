@@ -61,11 +61,7 @@ func (h *Handler) SetRoutes(admin *httprouterx.RouterAdmin) {
 	admin.GET(ConsentPath, h.getOAuth2ConsentRequest)
 	admin.PUT(ConsentPath+"/accept", h.acceptOAuth2ConsentRequest)
 	admin.PUT(ConsentPath+"/reject", h.rejectOAuth2ConsentRequest)
-	adminV
-	adminV
-	adminV	adminV
-	adminV
-	adminV
+
 	admin.DELETE(SessionsPath+"/login", h.revokeOAuth2LoginSessions)
 	admin.GET(SessionsPath+"/consent", h.listOAuth2ConsentSessions)
 	admin.DELETE(SessionsPath+"/consent", h.revokeOAuth2ConsentSessions)

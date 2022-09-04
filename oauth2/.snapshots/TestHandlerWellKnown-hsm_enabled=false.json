@@ -42,7 +42,8 @@
     "authorization_code",
     "implicit",
     "client_credentials",
-    "refresh_token"
+    "refresh_token",
+    "urn:ietf:params:oauth:grant-type:device_code"
   ],
   "id_token_signed_response_alg": [
     "RS256"
@@ -51,6 +52,7 @@
     "RS256"
   ],
   "issuer": "http://hydra.localhost",
+  "device_authorization_endpoint": "http://hydra.localhost/oauth2/device/auth",
   "jwks_uri": "http://hydra.localhost/.well-known/jwks.json",
   "registration_endpoint": "http://client-register/registration",
   "request_object_signing_alg_values_supported": [

@@ -253,7 +253,11 @@ func (h *Handler) DeviceAuthPostHandler(w http.ResponseWriter, r *http.Request, 
 
 // swagger:route GET /oauth2/sessions/logout oidc revokeOidcSession
 //
+<<<<<<< HEAD
 // # OpenID Connect Front- and Back-channel Enabled Logout
+=======
+// OpenID Connect Front- or Back-channel Enabled Logout
+>>>>>>> 43c9f8ca (Update go.mod & update mocks, sdk, ...)
 //
 // This endpoint initiates and completes user logout at the Ory OAuth2 & OpenID provider and initiates OpenID Connect Front- / Back-channel logout:
 //
@@ -602,7 +606,7 @@ type CredentialSupportedDraft00 struct {
 
 // swagger:route GET /.well-known/openid-configuration oidc discoverOidcConfiguration
 //
-// # OpenID Connect Discovery
+// OpenID Connect Discovery
 //
 // A mechanism for an OpenID Connect Relying Party to discover the End-User's OpenID Provider and obtain information needed to interact with it, including its OAuth 2.0 endpoint locations.
 //
@@ -735,7 +739,7 @@ type oidcUserInfo struct {
 
 // swagger:route GET /userinfo oidc getOidcUserInfo
 //
-// # OpenID Connect Userinfo
+// OpenID Connect Userinfo
 //
 // This endpoint returns the payload of the ID Token, including `session.id_token` values, of
 // the provided OAuth 2.0 Access Token's consent request.
@@ -851,7 +855,11 @@ type revokeOAuth2Token struct {
 
 // swagger:route POST /oauth2/revoke oAuth2 revokeOAuth2Token
 //
+<<<<<<< HEAD
 // # Revoke OAuth 2.0 Access or Refresh Token
+=======
+// Revoke an OAuth2 Access or Refresh Token
+>>>>>>> 43c9f8ca (Update go.mod & update mocks, sdk, ...)
 //
 // Revoking a token (both access and refresh) means that the tokens will be invalid. A revoked access token can no
 // longer be used to make access requests, and a revoked refresh token can no longer be used to refresh an access token.
@@ -906,7 +914,11 @@ type introspectOAuth2Token struct {
 
 // swagger:route POST /admin/oauth2/introspect oAuth2 introspectOAuth2Token
 //
+<<<<<<< HEAD
 // # Introspect OAuth2 Access and Refresh Tokens
+=======
+// Introspect OAuth2 Access or Refresh Tokens
+>>>>>>> 43c9f8ca (Update go.mod & update mocks, sdk, ...)
 //
 // The introspection endpoint allows to check if a token (both refresh and access) is active or not. An active token
 // is neither expired nor revoked. If a token is active, additional information on the token will be included. You can
@@ -1071,7 +1083,7 @@ type oAuth2TokenExchange struct {
 
 // swagger:route POST /oauth2/token oAuth2 oauth2TokenExchange
 //
-// # The OAuth 2.0 Token Endpoint
+// The OAuth 2.0 Token Endpoint
 //
 // Use open source libraries to perform OAuth 2.0 and OpenID Connect
 // available for any programming language. You can find a list of libraries here https://oauth.net/code/
@@ -1171,7 +1183,11 @@ func (h *Handler) oauth2TokenExchange(w http.ResponseWriter, r *http.Request) {
 
 // swagger:route GET /oauth2/auth oAuth2 oAuth2Authorize
 //
+<<<<<<< HEAD
 // # OAuth 2.0 Authorize Endpoint
+=======
+// The OAuth 2.0 Authorize Endpoint
+>>>>>>> 43c9f8ca (Update go.mod & update mocks, sdk, ...)
 //
 // Use open source libraries to perform OAuth 2.0 and OpenID Connect
 // available for any programming language. You can find a list of libraries at https://oauth.net/code/
@@ -1310,7 +1326,11 @@ type deleteOAuth2Token struct {
 
 // swagger:route DELETE /admin/oauth2/tokens oAuth2 deleteOAuth2Token
 //
+<<<<<<< HEAD
 // # Delete OAuth 2.0 Access Tokens from specific OAuth 2.0 Client
+=======
+// Delete OAuth2 Access Tokens from a Client
+>>>>>>> 43c9f8ca (Update go.mod & update mocks, sdk, ...)
 //
 // This endpoint deletes OAuth2 access tokens issued to an OAuth 2.0 Client from the database.
 //

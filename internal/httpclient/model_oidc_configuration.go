@@ -34,6 +34,9 @@ type OidcConfiguration struct {
 	// OpenID Connect Verifiable Credentials Supported  JSON array containing a list of the Verifiable Credentials supported by this authorization server.
 	CredentialsSupportedDraft00 []CredentialSupportedDraft00 `json:"credentials_supported_draft_00,omitempty"`
 	// OpenID Connect End-Session Endpoint  URL at the OP to which an RP can perform a redirect to request that the End-User be logged out at the OP.
+	// URL of the authorization server's device authorization endpoint
+	DeviceAuthorizationEndpoint *string `json:"device_authorization_endpoint,omitempty"`
+	// URL at the OP to which an RP can perform a redirect to request that the End-User be logged out at the OP.
 	EndSessionEndpoint *string `json:"end_session_endpoint,omitempty"`
 	// OpenID Connect Front-Channel Logout Session Required  Boolean value specifying whether the OP can pass iss (issuer) and sid (session ID) query parameters to identify the RP session with the OP when the frontchannel_logout_uri is used. If supported, the sid Claim is also included in ID Tokens issued by the OP.
 	FrontchannelLogoutSessionSupported *bool `json:"frontchannel_logout_session_supported,omitempty"`
@@ -317,6 +320,32 @@ func (o *OidcConfiguration) HasCredentialsEndpointDraft00() bool {
 
 	return false
 }
+// GetDeviceAuthorizationEndpoint returns the DeviceAuthorizationEndpoint field value if set, zero value otherwise.
+func (o *OidcConfiguration) GetDeviceAuthorizationEndpoint() string {
+	if o == nil || o.DeviceAuthorizationEndpoint == nil {
+		var ret string
+		return ret
+	}
+	return *o.DeviceAuthorizationEndpoint
+}
+
+// GetDeviceAuthorizationEndpointOk returns a tuple with the DeviceAuthorizationEndpoint field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *OidcConfiguration) GetDeviceAuthorizationEndpointOk() (*string, bool) {
+	if o == nil || o.DeviceAuthorizationEndpoint == nil {
+		return nil, false
+	}
+	return o.DeviceAuthorizationEndpoint, true
+}
+
+// HasDeviceAuthorizationEndpoint returns a boolean if a field has been set.
+func (o *OidcConfiguration) HasDeviceAuthorizationEndpoint() bool {
+	if o != nil && o.DeviceAuthorizationEndpoint != nil {
+		return true
+	}
+
+	return false
+}
 
 // SetCredentialsEndpointDraft00 gets a reference to the given string and assigns it to the CredentialsEndpointDraft00 field.
 func (o *OidcConfiguration) SetCredentialsEndpointDraft00(v string) {
@@ -353,6 +382,11 @@ func (o *OidcConfiguration) HasCredentialsSupportedDraft00() bool {
 // SetCredentialsSupportedDraft00 gets a reference to the given []CredentialSupportedDraft00 and assigns it to the CredentialsSupportedDraft00 field.
 func (o *OidcConfiguration) SetCredentialsSupportedDraft00(v []CredentialSupportedDraft00) {
 	o.CredentialsSupportedDraft00 = v
+}
+
+// SetDeviceAuthorizationEndpoint gets a reference to the given string and assigns it to the DeviceAuthorizationEndpoint field.
+func (o *OidcConfiguration) SetDeviceAuthorizationEndpoint(v string) {
+	o.DeviceAuthorizationEndpoint = &v
 }
 
 // GetEndSessionEndpoint returns the EndSessionEndpoint field value if set, zero value otherwise.
@@ -1052,6 +1086,9 @@ func (o OidcConfiguration) MarshalJSON() ([]byte, error) {
 	}
 	if o.CredentialsSupportedDraft00 != nil {
 		toSerialize["credentials_supported_draft_00"] = o.CredentialsSupportedDraft00
+	}
+	if o.DeviceAuthorizationEndpoint != nil {
+		toSerialize["device_authorization_endpoint"] = o.DeviceAuthorizationEndpoint
 	}
 	if o.EndSessionEndpoint != nil {
 		toSerialize["end_session_endpoint"] = o.EndSessionEndpoint

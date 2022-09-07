@@ -1053,7 +1053,7 @@ type swaggerDeviceGrantVerifyUserCodeRequest struct {
 
 // swagger:route PUT /oauth2/auth/requests/device/verify admin verifyUserCodeRequest
 //
-// # Verifies a device grant request
+// Verifies a device grant request
 // Verifies a device grant request
 //
 //	Consumes:

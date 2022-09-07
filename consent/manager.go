@@ -63,8 +63,8 @@ type (
 		VerifyAndInvalidateLogoutRequest(ctx context.Context, verifier string) (*flow.LogoutRequest, error)
 
 		CreateDeviceGrantRequest(ctx context.Context, req *DeviceGrantRequest) error
-		AcceptDeviceGrantRequest(ctx context.Context, challenge string, user_code string, client_id string, requested_scopes fosite.Arguments, requested_aud fosite.Arguments) (*DeviceGrantRequest, error)
 		GetDeviceGrantRequestByVerifier(ctx context.Context, verifier string) (*DeviceGrantRequest, error)
+		AcceptDeviceGrantRequest(ctx context.Context, challenge string, device_code_signature string, clientId string, requested_scopes fosite.Arguments, requested_aud fosite.Arguments) (*DeviceGrantRequest, error)
 		VerifyAndInvalidateDeviceGrantRequest(ctx context.Context, verifier string) (*DeviceGrantRequest, error)
 	}
 

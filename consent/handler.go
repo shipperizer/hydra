@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/ory/hydra/v2/flow"
@@ -39,8 +38,8 @@ const (
 	LoginPath    = "/oauth2/auth/requests/login"
 	ConsentPath  = "/oauth2/auth/requests/consent"
 	LogoutPath   = "/oauth2/auth/requests/logout"
-	SessionsPath = "/oauth2/auth/sessions"
 	DevicePath   = "/oauth2/auth/requests/device"
+	SessionsPath = "/oauth2/auth/sessions"
 )
 
 func NewHandler(
@@ -1098,35 +1097,26 @@ func (h *Handler) verifyUserCodeRequest(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	userCodeHash := h.r.OAuth2HMACStrategy().UserCodeSignature(r.Context(), p.UserCode)
-	req, err := h.r.OAuth2Storage().GetUserCodeSession(r.Context(), userCodeHash, &fosite.DefaultSession{})
+	userCodeSignature := h.r.OAuth2HMACStrategy().UserCodeSignature(r.Context(), p.UserCode)
+	req, err := h.r.OAuth2Storage().GetUserCodeSession(r.Context(), userCodeSignature, &fosite.DefaultSession{})
 	if err != nil {
 		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrNotFound.WithHint(`User code session not found`)))
 		return
 	}
 
 	fmt.Printf("adminVerifyUserCodeRequest session id : %v\n", req.GetID())
+	// FIXME: Should we delete the UserCode after usage ?
 
-	client_id := req.GetClient().GetID()
+	clientId := req.GetClient().GetID()
 
-	grantRequest, err := h.r.ConsentManager().AcceptDeviceGrantRequest(r.Context(), challenge, p.UserCode, client_id, req.GetRequestedScopes(), req.GetRequestedAudience())
-
+	// req.GetID() is actually the DeviceCodeSignature
+	grantRequest, err := h.r.ConsentManager().AcceptDeviceGrantRequest(r.Context(), challenge, req.GetID(), clientId, req.GetRequestedScopes(), req.GetRequestedAudience())
 	if err != nil {
 		h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
 		return
 	}
 
-	// Get and join the list of scopes requested from the device
-	var scopes []string = req.GetRequestedScopes()
-	scope_string := strings.Join(scopes, " ")
-
-	// As we dont have a redirectURI we know of, just pick the 1st one the client supports
-	response_redirect := ""
-	if len(req.GetClient().GetRedirectURIs()) > 0 {
-		response_redirect = req.GetClient().GetRedirectURIs()[0]
-	}
-
 	h.r.Writer().Write(w, r, &RequestHandlerResponse{
-		RedirectTo: urlx.SetQuery(h.c.OAuth2AuthURL(r.Context()), url.Values{"state": {"fake-state"}, "device_verifier": {grantRequest.Verifier}, "client_id": {client_id}, "redirect_uri": {response_redirect}, "response_type": {"device_code"}, "scope": {scope_string}}).String(),
+		RedirectTo: urlx.SetQuery(h.c.OAuth2DeviceAuthorisationURL(r.Context()), url.Values{"device_verifier": {grantRequest.Verifier}, "client_id": {clientId}}).String(),
 	})
 }

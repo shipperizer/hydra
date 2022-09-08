@@ -2295,9 +2295,12 @@ This release introduces two new features:
 This release resolves issues in the log module, improves the SDK type definitions, and introduces new configuration options to HSM.
 
 
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> 7e667dfb (Don't edit changelog)
 ### Bug Fixes
 
 * Add limit and offset to pagination ([#3062](https://github.com/ory/hydra/issues/3062)) ([51f6c5d](https://github.com/ory/hydra/commit/51f6c5d12e38ac82f80d6db34d9d0d788af2d985)), closes [#3033](https://github.com/ory/hydra/issues/3033)
@@ -2732,7 +2735,10 @@ Please note that the location of our Homebrew tap has changed for Ory Hydra from
 
 * Support updating keys in CLI ([#2460](https://github.com/ory/hydra/issues/2460)) ([e874f4f](https://github.com/ory/hydra/commit/e874f4f300012f363c0bdf685458d0c56c5a8477)), closes [#2436](https://github.com/ory/hydra/issues/2436)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7e667dfb (Don't edit changelog)
 # [1.10.6](https://github.com/ory/hydra/compare/v1.10.5...v1.10.6) (2021-08-28)
 
 This release primarily resolves issues with the SDK publishing pipeline.

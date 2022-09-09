@@ -2633,7 +2633,7 @@
     },
     "/admin/oauth2/auth/requests/device/verify": {
       "put": {
-        "description": "Verifies a device grant request\nVerifies a device grant request",
+        "description": "Verifies a device grant request",
         "operationId": "adminVerifyUserCodeRequest",
         "parameters": [
           {
@@ -2677,6 +2677,7 @@
             "description": "oAuth2ApiError"
           }
         },
+        "summary": "Verifies a device grant request",
         "tags": [
           "admin"
         ]

@@ -893,7 +893,7 @@
     },
     "/admin/oauth2/auth/requests/device/verify": {
       "put": {
-        "description": "Verifies a device grant request\nVerifies a device grant request",
+        "description": "Verifies a device grant request",
         "consumes": [
           "application/json"
         ],
@@ -907,6 +907,7 @@
         "tags": [
           "admin"
         ],
+        "summary": "Verifies a device grant request",
         "operationId": "adminVerifyUserCodeRequest",
         "parameters": [
           {

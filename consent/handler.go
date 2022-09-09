@@ -1055,18 +1055,17 @@ type swaggerDeviceGrantVerifyUserCodeRequest struct {
 //
 // # Verifies a device grant request
 //
-//	Consumes:
-//	- application/json
+//		Consumes:
+//		- application/json
 //
-//	Produces:
-//	- application/json
+//		Produces:
+//		- application/json
 //
-//	Schemes: http, https
+//		Schemes: http, https
 //
-//	Responses:
-//	  200: completedRequest
-//	  404: jsonError
-//	  500: jsonError
+//	 Responses:
+//		  200: successfulOAuth2RequestResponse
+//		  default: oAuth2ApiError
 func (h *Handler) verifyUserCodeRequest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	fmt.Println("adminVerifyUserCodeRequest ++")

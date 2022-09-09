@@ -786,6 +786,40 @@ paths:
       summary: Reject OAuth 2.0 Consent Request
       tags:
       - oAuth2
+  /oauth2/auth/requests/device/verify:
+    put:
+      description: Verifies a device grant request
+      operationId: adminVerifyUserCodeRequest
+      parameters:
+        - explode: true
+          in: query
+          name: device_challenge
+          required: true
+          schema:
+            type: string
+          style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/verifyUserCodeRequest"
+        x-originalParamName: Body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/successfulOAuth2RequestResponse"
+          description: successfulOAuth2RequestResponse
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/oAuth2ApiError"
+          description: oAuth2ApiError
+      summary: Verifies a device grant request
+      tags:
+        - v0alpha2
   /admin/oauth2/auth/requests/login:
     get:
       description: "When an authorization code, hybrid, or implicit OAuth 2.0 Flow\

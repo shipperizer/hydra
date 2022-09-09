@@ -1080,8 +1080,6 @@ func (h *Handler) verifyUserCodeRequest(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	fmt.Printf("adminVerifyUserCodeRequest challange : %v\n", challenge)
-
 	var p DeviceGrantVerifyUserCodeRequest
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
@@ -1089,8 +1087,6 @@ func (h *Handler) verifyUserCodeRequest(w http.ResponseWriter, r *http.Request, 
 		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithWrap(err).WithHintf("Unable to decode body because: %s", err)))
 		return
 	}
-
-	fmt.Printf("adminVerifyUserCodeRequest user code : %v\n", p.UserCode)
 
 	if p.UserCode == "" {
 		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("Field 'user_code' must not be empty.")))
@@ -1104,7 +1100,6 @@ func (h *Handler) verifyUserCodeRequest(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	fmt.Printf("adminVerifyUserCodeRequest session id : %v\n", req.GetID())
 	// FIXME: Should we delete the UserCode after usage ?
 
 	clientId := req.GetClient().GetID()

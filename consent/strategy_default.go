@@ -1295,10 +1295,6 @@ func (s *DefaultStrategy) HandleOAuth2DeviceAuthorizationRequest(ctx context.Con
 	consentVerifier := strings.TrimSpace(req.GetRequestForm().Get("consent_verifier"))
 	deviceVerifier := strings.TrimSpace(req.GetRequestForm().Get("device_verifier"))
 
-	fmt.Printf("CookieNameDeviceVerifyCSRF : %v ", s.r.Config().CookieNameDeviceVerifyCSRF(r.Context()))
-	fmt.Printf("CookieStore : %v ", s.r.CookieStore(r.Context()))
-	fmt.Printf("Config : %v ", s.r.Config())
-
 	if deviceVerifier == "" && authenticationVerifier == "" && consentVerifier == "" {
 		// ok, we need to process this request and redirect to device auth endpoint
 		return nil, s.requestDevice(ctx, w, r, req)

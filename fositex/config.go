@@ -58,7 +58,6 @@ var defaultFactories = []Factory{
 	compose.OpenIDConnectHybridFactory,
 	compose.OpenIDConnectImplicitFactory,
 	compose.OpenIDConnectRefreshFactory,
-	compose.OpenIDConnectDeviceFactory,
 	compose.OAuth2TokenRevocationFactory,
 	compose.OAuth2TokenIntrospectionFactory,
 	compose.OAuth2PKCEFactory,

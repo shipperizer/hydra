@@ -328,6 +328,7 @@ func TestViperProviderValidates(t *testing.T) {
 	assert.Equal(t, 20, c.GetBCryptCost(ctx))
 	assert.Equal(t, true, c.GetEnforcePKCE(ctx))
 	assert.Equal(t, true, c.GetEnforcePKCEForPublicClients(ctx))
+	assert.Equal(t, 2*time.Hour, c.GetDeviceAuthTokenPollingInterval(ctx))
 
 	// secrets
 	secret, err := c.GetGlobalSecret(ctx)

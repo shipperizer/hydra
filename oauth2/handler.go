@@ -121,16 +121,16 @@ func (h *Handler) SetRoutes(admin *httprouterx.RouterAdmin, public *httprouterx.
 	admin.POST(IntrospectPath, h.introspectOAuth2Token)
 	admin.DELETE(DeleteTokensPath, h.deleteOAuth2Token)
 
-	public.Handler("GET", DeviceAuthPath, h.DeviceAuthGetHandler)
+	public.Handler("GET", DeviceAuthPath, h.performOAuth2DeviceAuthorizationFlow)
 	// This is only a shorthand to avoid people to type a long url;
-	public.Handler("GET", h.c.DeviceInternalURL(context.Background()).Path, h.DeviceAuthGetHandler)
-	public.Handler("POST", DeviceAuthPath, h.DeviceAuthPostHandler)
+	public.Handler("GET", h.c.DeviceInternalURL(context.Background()).Path, h.performOAuth2DeviceAuthorizationFlow)
+	public.Handler("POST", DeviceAuthPath, h.performOAuth2DeviceFlow)
 }
 
-func (h *Handler) DeviceAuthGetHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *Handler) performOAuth2DeviceAuthorizationFlow(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var ctx = r.Context()
 
-	authorizeRequest, err := h.r.OAuth2Provider().NewDeviceAuthorizeGetRequest(ctx, r)
+	authorizeRequest, err := h.r.OAuth2Provider().NewDeviceAuthorizeRequest(ctx, r)
 	if err != nil {
 		x.LogError(r, err, h.r.Logger())
 		return
@@ -203,7 +203,8 @@ func (h *Handler) DeviceAuthGetHandler(w http.ResponseWriter, r *http.Request, _
 	}
 	claims.Add("sid", session.ConsentRequest.LoginSessionID)
 
-	authorizeRequest.SetSession(&Session{
+	// done
+	response, err := h.r.OAuth2Provider().NewDeviceAuthorizeResponse(ctx, authorizeRequest, &Session{
 		DefaultSession: &openid.DefaultSession{
 			Claims: claims,
 			Headers: &jwt.Headers{Extra: map[string]interface{}{
@@ -219,20 +220,39 @@ func (h *Handler) DeviceAuthGetHandler(w http.ResponseWriter, r *http.Request, _
 		ExcludeNotBeforeClaim: h.c.ExcludeNotBeforeClaim(ctx),
 		AllowedTopLevelClaims: h.c.AllowedTopLevelClaims(ctx),
 	})
+	if err != nil {
+		x.LogError(r, err, h.r.Logger())
+		return
+	}
 
-	err = h.r.OAuth2Storage().UpdateDeviceCodeSessionByRequestId(ctx, authorizeRequest.GetDeviceRequestId(), authorizeRequest)
+	err = h.r.OAuth2Storage().UpdateDeviceCodeSession(ctx, authorizeRequest.GetDeviceCodeSignature(), authorizeRequest)
 	if err != nil {
 		h.r.Writer().WriteError(w, r, err)
 	}
 
-	// Device flow is done, let's redirect the user back to the
-	//
-	http.Redirect(w, r, h.c.DeviceDoneURL(ctx).String(), http.StatusFound)
+	h.r.OAuth2Provider().WriteDeviceAuthorizeResponse(ctx, w, authorizeRequest, response)
 }
 
-func (h *Handler) DeviceAuthPostHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+// swagger:route GET /oauth2/device/auth v0alpha2 performOAuth2DeviceFlow
+//
+// # The OAuth 2.0 Device Authorize Endpoint
+//
+// This endpoint is not documented here because you should never use your own implementation to perform OAuth2 flows.
+// OAuth2 is a very popular protocol and a library for your programming language will exists.
+//
+// To learn more about this flow please refer to the specification: https://tools.ietf.org/html/rfc8628
+//
+//	Consumes:
+//	- application/x-www-form-urlencoded
+//
+//	Schemes: http, https
+//
+//	Responses:
+//	  200: oAuth2ApiDeviceAuthorizationResponse
+//	  default: oAuth2ApiError
+func (h *Handler) performOAuth2DeviceFlow(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var ctx = r.Context()
-	request, err := h.r.OAuth2Provider().NewDeviceAuthorizePostRequest(ctx, r)
+	request, err := h.r.OAuth2Provider().NewDeviceRequest(ctx, r)
 	if err != nil {
 		h.r.Writer().WriteError(w, r, err)
 		return
@@ -244,22 +264,18 @@ func (h *Handler) DeviceAuthPostHandler(w http.ResponseWriter, r *http.Request, 
 	}
 
 	request.SetSession(session)
-	resp, err := h.r.OAuth2Provider().NewDeviceAuthorizeResponse(ctx, request)
-
+	resp, err := h.r.OAuth2Provider().NewDeviceResponse(ctx, request)
 	if err != nil {
 		h.r.Writer().WriteError(w, r, err)
 		return
 	}
-	h.r.OAuth2Provider().WriteDeviceAuthorizeResponse(ctx, w, request, resp)
+
+	h.r.OAuth2Provider().WriteDeviceResponse(ctx, w, request, resp)
 }
 
 // swagger:route GET /oauth2/sessions/logout oidc revokeOidcSession
 //
-<<<<<<< HEAD
 // # OpenID Connect Front- and Back-channel Enabled Logout
-=======
-// OpenID Connect Front- or Back-channel Enabled Logout
->>>>>>> 43c9f8ca (Update go.mod & update mocks, sdk, ...)
 //
 // This endpoint initiates and completes user logout at the Ory OAuth2 & OpenID provider and initiates OpenID Connect Front- / Back-channel logout:
 //
@@ -608,7 +624,7 @@ type CredentialSupportedDraft00 struct {
 
 // swagger:route GET /.well-known/openid-configuration oidc discoverOidcConfiguration
 //
-// OpenID Connect Discovery
+// # OpenID Connect Discovery
 //
 // A mechanism for an OpenID Connect Relying Party to discover the End-User's OpenID Provider and obtain information needed to interact with it, including its OAuth 2.0 endpoint locations.
 //
@@ -741,7 +757,7 @@ type oidcUserInfo struct {
 
 // swagger:route GET /userinfo oidc getOidcUserInfo
 //
-// OpenID Connect Userinfo
+// # OpenID Connect Userinfo
 //
 // This endpoint returns the payload of the ID Token, including `session.id_token` values, of
 // the provided OAuth 2.0 Access Token's consent request.
@@ -857,11 +873,7 @@ type revokeOAuth2Token struct {
 
 // swagger:route POST /oauth2/revoke oAuth2 revokeOAuth2Token
 //
-<<<<<<< HEAD
 // # Revoke OAuth 2.0 Access or Refresh Token
-=======
-// Revoke an OAuth2 Access or Refresh Token
->>>>>>> 43c9f8ca (Update go.mod & update mocks, sdk, ...)
 //
 // Revoking a token (both access and refresh) means that the tokens will be invalid. A revoked access token can no
 // longer be used to make access requests, and a revoked refresh token can no longer be used to refresh an access token.
@@ -916,11 +928,7 @@ type introspectOAuth2Token struct {
 
 // swagger:route POST /admin/oauth2/introspect oAuth2 introspectOAuth2Token
 //
-<<<<<<< HEAD
 // # Introspect OAuth2 Access and Refresh Tokens
-=======
-// Introspect OAuth2 Access or Refresh Tokens
->>>>>>> 43c9f8ca (Update go.mod & update mocks, sdk, ...)
 //
 // The introspection endpoint allows to check if a token (both refresh and access) is active or not. An active token
 // is neither expired nor revoked. If a token is active, additional information on the token will be included. You can
@@ -1085,7 +1093,7 @@ type oAuth2TokenExchange struct {
 
 // swagger:route POST /oauth2/token oAuth2 oauth2TokenExchange
 //
-// The OAuth 2.0 Token Endpoint
+// # The OAuth 2.0 Token Endpoint
 //
 // Use open source libraries to perform OAuth 2.0 and OpenID Connect
 // available for any programming language. You can find a list of libraries here https://oauth.net/code/
@@ -1185,11 +1193,7 @@ func (h *Handler) oauth2TokenExchange(w http.ResponseWriter, r *http.Request) {
 
 // swagger:route GET /oauth2/auth oAuth2 oAuth2Authorize
 //
-<<<<<<< HEAD
 // # OAuth 2.0 Authorize Endpoint
-=======
-// The OAuth 2.0 Authorize Endpoint
->>>>>>> 43c9f8ca (Update go.mod & update mocks, sdk, ...)
 //
 // Use open source libraries to perform OAuth 2.0 and OpenID Connect
 // available for any programming language. You can find a list of libraries at https://oauth.net/code/
@@ -1328,11 +1332,7 @@ type deleteOAuth2Token struct {
 
 // swagger:route DELETE /admin/oauth2/tokens oAuth2 deleteOAuth2Token
 //
-<<<<<<< HEAD
 // # Delete OAuth 2.0 Access Tokens from specific OAuth 2.0 Client
-=======
-// Delete OAuth2 Access Tokens from a Client
->>>>>>> 43c9f8ca (Update go.mod & update mocks, sdk, ...)
 //
 // This endpoint deletes OAuth2 access tokens issued to an OAuth 2.0 Client from the database.
 //

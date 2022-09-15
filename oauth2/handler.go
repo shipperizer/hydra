@@ -143,9 +143,11 @@ func (h *Handler) performOAuth2DeviceAuthorizationFlow(w http.ResponseWriter, r 
 		return
 	} else if e := &(fosite.RFC6749Error{}); errors.As(err, &e) {
 		x.LogAudit(r, err, h.r.AuditLogger())
+		h.r.Writer().WriteError(w, r, err)
 		return
 	} else if err != nil {
 		x.LogError(r, err, h.r.Logger())
+		h.r.Writer().WriteError(w, r, err)
 		return
 	}
 
@@ -162,6 +164,7 @@ func (h *Handler) performOAuth2DeviceAuthorizationFlow(w http.ResponseWriter, r 
 	openIDKeyID, err := h.r.OpenIDJWTStrategy().GetPublicKeyID(ctx)
 	if err != nil {
 		x.LogError(r, err, h.r.Logger())
+		h.r.Writer().WriteError(w, r, err)
 		return
 	}
 
@@ -170,6 +173,7 @@ func (h *Handler) performOAuth2DeviceAuthorizationFlow(w http.ResponseWriter, r 
 		accessTokenKeyID, err = h.r.AccessTokenJWTStrategy().GetPublicKeyID(ctx)
 		if err != nil {
 			x.LogError(r, err, h.r.Logger())
+			h.r.Writer().WriteError(w, r, err)
 			return
 		}
 	}
@@ -177,9 +181,11 @@ func (h *Handler) performOAuth2DeviceAuthorizationFlow(w http.ResponseWriter, r 
 	obfuscatedSubject, err := h.r.ConsentStrategy().ObfuscateSubjectIdentifier(ctx, authorizeRequest.GetClient(), session.ConsentRequest.Subject, session.ConsentRequest.ForceSubjectIdentifier)
 	if e := &(fosite.RFC6749Error{}); errors.As(err, &e) {
 		x.LogAudit(r, err, h.r.AuditLogger())
+		h.r.Writer().WriteError(w, r, err)
 		return
 	} else if err != nil {
 		x.LogError(r, err, h.r.Logger())
+		h.r.Writer().WriteError(w, r, err)
 		return
 	}
 
@@ -222,11 +228,13 @@ func (h *Handler) performOAuth2DeviceAuthorizationFlow(w http.ResponseWriter, r 
 	})
 	if err != nil {
 		x.LogError(r, err, h.r.Logger())
+		h.r.Writer().WriteError(w, r, err)
 		return
 	}
 
 	err = h.r.OAuth2Storage().UpdateDeviceCodeSession(ctx, authorizeRequest.GetDeviceCodeSignature(), authorizeRequest)
 	if err != nil {
+		x.LogError(r, err, h.r.Logger())
 		h.r.Writer().WriteError(w, r, err)
 	}
 

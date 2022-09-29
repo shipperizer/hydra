@@ -240,8 +240,6 @@ func (p *Persister) createSession(ctx context.Context, signature string, request
 	return nil
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (p *Persister) findSessionBySignature(ctx context.Context, signature string, session fosite.Session, table tableName) (fosite.Requester, error) {
 	r := OAuth2RequestSQL{Table: table}
 	err := p.QueryWithNetwork(ctx).Where("signature = ?", signature).First(&r)
@@ -284,10 +282,7 @@ func (p *Persister) findSessionBySignature(ctx context.Context, signature string
 	return r.toRequest(ctx, session, p)
 }
 
-func (p *Persister) updateSessionByRequestId(ctx context.Context, id string, requester fosite.Requester, table tableName) error {
-=======
 func (p *Persister) updateSessionBySignature(ctx context.Context, signature string, requester fosite.Requester, table tableName) error {
->>>>>>> 4a627b24 (Split files and do some DB optimizations)
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.updateSession")
 	defer span.End()
 
@@ -308,7 +303,6 @@ func (p *Persister) updateSessionBySignature(ctx context.Context, signature stri
 	}
 	return nil
 }
-
 
 func (p *Persister) deleteSessionBySignature(ctx context.Context, signature string, table tableName) error {
 	err := sqlcon.HandleError(

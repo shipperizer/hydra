@@ -253,7 +253,7 @@ func (p *Persister) AcceptDeviceGrantRequest(ctx context.Context, challenge stri
 		dgr.RequestedAudience = sqlxx.StringSlicePipeDelimiter(requested_aud)
 
 		count, err := p.UpdateWithNetwork(ctx, &dgr)
-		if (count != 1) {
+		if count != 1 {
 			return errorsx.WithStack(x.ErrNotFound)
 		}
 		return err
@@ -262,7 +262,7 @@ func (p *Persister) AcceptDeviceGrantRequest(ctx context.Context, challenge stri
 
 func (p *Persister) VerifyAndInvalidateDeviceGrantRequest(ctx context.Context, verifier string) (*consent.DeviceGrantRequest, error) {
 	var d consent.DeviceGrantRequest
-	return &d, p.transaction(ctx, func(ctx context.Context, c *pop.Connection) error { 
+	return &d, p.transaction(ctx, func(ctx context.Context, c *pop.Connection) error {
 		if err := p.QueryWithNetwork(ctx).Where("verifier = ?", verifier).First(&d); err != nil {
 			return sqlcon.HandleError(err)
 		}

@@ -5,7 +5,6 @@ package consent
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -1067,8 +1066,6 @@ type swaggerDeviceGrantVerifyUserCodeRequest struct {
 //		  200: successfulOAuth2RequestResponse
 //		  default: oAuth2ApiError
 func (h *Handler) verifyUserCodeRequest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-
-	fmt.Println("adminVerifyUserCodeRequest ++")
 	challenge := stringsx.Coalesce(
 		r.URL.Query().Get("device_challenge"),
 		r.URL.Query().Get("challenge"),
@@ -1097,7 +1094,7 @@ func (h *Handler) verifyUserCodeRequest(w http.ResponseWriter, r *http.Request, 
 		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrNotFound.WithWrap(err).WithHint(`'user_code' session not found`)))
 		return
 	}
-	
+
 	clientId := userCodeRequest.GetClient().GetID()
 	// UserCode & DeviceCode Request shares the same RequestId as it's the same request;
 	deviceRequestId := userCodeRequest.GetID()

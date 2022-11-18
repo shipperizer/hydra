@@ -18,6 +18,7 @@ import (
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/twmb/murmur3"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/ory/hydra/v2/flow"
@@ -1170,6 +1171,7 @@ func (s *DefaultStrategy) forwardDeviceRequest(ctx context.Context, w http.Respo
 	iu := s.c.OAuth2DeviceAuthorisationURL(ctx)
 	iu.RawQuery = r.URL.RawQuery
 
+	cl := sanitizeClientFromRequest(req)
 	if err := s.r.ConsentManager().CreateDeviceGrantRequest(
 		r.Context(),
 		&DeviceGrantRequest{
@@ -1182,7 +1184,8 @@ func (s *DefaultStrategy) forwardDeviceRequest(ctx context.Context, w http.Respo
 		return errorsx.WithStack(err)
 	}
 
-	if err := createCsrfSession(w, r, s.r.Config(), s.r.CookieStore(ctx), s.r.Config().CookieNameDeviceVerifyCSRF(ctx), csrf); err != nil {
+	clientSpecificCookieNameDeviceCSRF := fmt.Sprintf("%s_%d", s.r.Config().CookieNameConsentCSRF(ctx), murmur3.Sum32(cl.ID.Bytes()))
+	if err := createCsrfSession(w, r, s.r.Config(), s.r.CookieStore(ctx), clientSpecificCookieNameDeviceCSRF, csrf, s.c.ConsentRequestMaxAge(ctx)); err != nil {
 		return errorsx.WithStack(err)
 	}
 

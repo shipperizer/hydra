@@ -12,6 +12,7 @@ import (
 	"github.com/ory/fosite/handler/openid"
 	"github.com/ory/fosite/handler/pkce"
 	"github.com/ory/fosite/handler/rfc7523"
+	"github.com/ory/fosite/handler/rfc8628"
 	"github.com/ory/fosite/handler/verifiable"
 )
 
@@ -23,6 +24,7 @@ type FositeStorer interface {
 	rfc7523.RFC7523KeyStorage
 	verifiable.NonceManager
 	oauth2.ResourceOwnerPasswordCredentialsGrantStorage
+	rfc8628.RFC8628CodeStorage
 
 	RevokeRefreshToken(ctx context.Context, requestID string) error
 

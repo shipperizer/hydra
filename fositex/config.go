@@ -52,7 +52,8 @@ var defaultResponseModeHandler = fosite.NewDefaultResponseModeHandler()
 var defaultFactories = []Factory{
 	compose.OAuth2DeviceAuthorizeFactory,
 	compose.RFC8628DeviceFactory,
-	compose.OAuth2AuthorizeExplicitFactory,
+	compose.OAuth2AuthorizeExplicitAuthFactory,
+	compose.OAuth2AuthorizeExplicitTokenFactory,
 	compose.OAuth2AuthorizeImplicitFactory,
 	compose.OAuth2ClientCredentialsGrantFactory,
 	compose.OAuth2RefreshTokenGrantFactory,
@@ -231,5 +232,5 @@ func (c *Config) GetDeviceDone(ctx context.Context) string {
 }
 
 func (c *Config) GetDeviceVerificationURL(ctx context.Context) string {
-	return urlx.AppendPaths(c.deps.Config().PublicURL(ctx), oauth2.DeviceGrantPath).String()
+	return c.deps.Config().DeviceVerificationURL(ctx).String()
 }

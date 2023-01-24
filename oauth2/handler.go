@@ -4,7 +4,6 @@
 package oauth2
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -122,8 +121,7 @@ func (h *Handler) SetRoutes(admin *httprouterx.RouterAdmin, public *httprouterx.
 	admin.DELETE(DeleteTokensPath, h.deleteOAuth2Token)
 
 	public.Handler("GET", DeviceAuthPath, h.performOAuth2DeviceAuthorizationFlow)
-	// This is only a shorthand to avoid people to type a long url;
-	public.Handler("GET", h.c.DeviceInternalURL(context.Background()).Path, h.performOAuth2DeviceAuthorizationFlow)
+	// This endpoint should be call on the device side
 	public.Handler("POST", DeviceAuthPath, h.performOAuth2DeviceFlow)
 }
 
@@ -238,7 +236,7 @@ func (h *Handler) performOAuth2DeviceAuthorizationFlow(w http.ResponseWriter, r 
 		h.r.Writer().WriteError(w, r, err)
 	}
 
-	h.r.OAuth2Provider().WriteDeviceAuthorizeResponse(ctx, w, authorizeRequest, response)
+	h.r.OAuth2Provider().WriteDeviceAuthorizeResponse(ctx, r, w, authorizeRequest, response)
 }
 
 // swagger:route GET /oauth2/device/auth v0alpha2 performOAuth2DeviceFlow

@@ -92,7 +92,7 @@ const (
 	KeyIdentityProviderAdminURL                  = "urls.identity_provider.url"
 	KeyIdentityProviderPublicURL                 = "urls.identity_provider.publicUrl"
 	KeyIdentityProviderHeaders                   = "urls.identity_provider.headers"
-	KeyDeviceInternalURL                         = "urls.self.device"
+	KeyDeviceVerificationURL                     = "urls.self.device"
 	KeyAccessTokenStrategy                       = "strategies.access_token"
 	KeyJWTScopeClaimStrategy                     = "strategies.jwt.scope_claim"
 	KeyDBIgnoreUnknownTableColumns               = "db.ignore_unknown_table_columns"
@@ -427,8 +427,8 @@ func (p *DefaultProvider) AdminURL(ctx context.Context) *url.URL {
 	)
 }
 
-func (p *DefaultProvider) DeviceInternalURL(ctx context.Context) *url.URL {
-	return urlRoot(p.getProvider(ctx).RequestURIF(KeyDeviceInternalURL, urlx.AppendPaths(p.PublicURL(ctx), "/device")))
+func (p *DefaultProvider) DeviceVerificationURL(ctx context.Context) *url.URL {
+	return urlRoot(p.getProvider(ctx).RequestURIF(KeyDeviceVerificationURL, urlx.AppendPaths(p.PublicURL(ctx), "/oauth2/device/auth")))
 }
 
 func (p *DefaultProvider) IssuerURL(ctx context.Context) *url.URL {

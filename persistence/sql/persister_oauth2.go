@@ -56,15 +56,27 @@ type (
 )
 
 const (
-	sqlTableOpenID  tableName = "oidc"
-	sqlTableAccess  tableName = "access"
-	sqlTableRefresh tableName = "refresh"
-	sqlTableCode    tableName = "code"
-	sqlTablePKCE    tableName = "pkce"
+	sqlTableOpenID     tableName = "oidc"
+	sqlTableAccess     tableName = "access"
+	sqlTableRefresh    tableName = "refresh"
+	sqlTableCode       tableName = "code"
+	sqlTablePKCE       tableName = "pkce"
+	sqlTableDeviceCode tableName = "device_code"
+	sqlTableUserCode   tableName = "user_code"
 )
 
 func (r OAuth2RequestSQL) TableName() string {
 	return "hydra_oauth2_" + string(r.Table)
+}
+
+// contains is a case sensitive match, finding needle in a haystack
+func contains(haystack []string, needle string) bool {
+	for _, a := range haystack {
+		if a == needle {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *Persister) sqlSchemaFromRequest(ctx context.Context, signature string, r fosite.Requester, table tableName) (*OAuth2RequestSQL, error) {
@@ -242,13 +254,54 @@ func (p *Persister) findSessionBySignature(ctx context.Context, signature string
 		if err != nil {
 			return nil, err
 		}
-		if table == sqlTableCode {
+
+		switch table {
+		case sqlTableCode:
 			return fr, errorsx.WithStack(fosite.ErrInvalidatedAuthorizeCode)
+		case sqlTableDeviceCode:
+			return fr, errorsx.WithStack(fosite.ErrInvalidatedDeviceCode)
+
+		case sqlTableUserCode:
+			return fr, errorsx.WithStack(fosite.ErrInvalidatedUserCode)
+		default:
+			return fr, errorsx.WithStack(fosite.ErrInactiveToken)
 		}
-		return fr, errorsx.WithStack(fosite.ErrInactiveToken)
+	}
+
+	if !r.ConsentChallenge.Valid {
+		fr, err = r.toRequest(ctx, session, p)
+		if err != nil {
+			return fr, err
+		}
+
+		if table == sqlTableDeviceCode {
+			return fr, errorsx.WithStack(fosite.ErrAuthorizationPending)
+		}
 	}
 
 	return r.toRequest(ctx, session, p)
+}
+
+func (p *Persister) updateSessionBySignature(ctx context.Context, signature string, requester fosite.Requester, table tableName) error {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.updateSession")
+	defer span.End()
+
+	req, err := p.sqlSchemaFromRequest(ctx, signature, requester, table)
+	if err != nil {
+		return err
+	}
+
+	if count, err := p.UpdateWithNetwork(ctx, req); count != 1 {
+		return errorsx.WithStack(fosite.ErrNotFound)
+	} else if err := sqlcon.HandleError(err); err != nil {
+		if errors.Is(err, sqlcon.ErrConcurrentUpdate) {
+			return errors.Wrap(fosite.ErrSerializationFailure, err.Error())
+		} else if strings.Contains(err.Error(), "Error 1213") { // InnoDB Deadlock?
+			return errors.Wrap(fosite.ErrSerializationFailure, err.Error())
+		}
+		return err
+	}
+	return nil
 }
 
 func (p *Persister) deleteSessionBySignature(ctx context.Context, signature string, table tableName) error {
@@ -544,5 +597,72 @@ func (p *Persister) DeleteAccessTokens(ctx context.Context, clientID string) (er
 	/* #nosec G201 table is static */
 	return sqlcon.HandleError(
 		p.QueryWithNetwork(ctx).Where("client_id=?", clientID).Delete(&OAuth2RequestSQL{Table: sqlTableAccess}),
+	)
+}
+
+func (p *Persister) CreateDeviceCodeSession(ctx context.Context, signature string, requester fosite.Requester) error {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.CreateDeviceCodeSession")
+	defer span.End()
+
+	return p.createSession(ctx, signature, requester, sqlTableDeviceCode)
+}
+
+func (p *Persister) UpdateDeviceCodeSession(ctx context.Context, signature string, requester fosite.Requester) error {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.UpdateDeviceCodeSession")
+	defer span.End()
+
+	return p.updateSessionBySignature(ctx, signature, requester, sqlTableDeviceCode)
+}
+
+func (p *Persister) GetDeviceCodeSession(ctx context.Context, signature string, session fosite.Session) (fosite.Requester, error) {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.GetDeviceCodeSession")
+	defer span.End()
+
+	return p.findSessionBySignature(ctx, signature, session, sqlTableDeviceCode)
+}
+
+func (p *Persister) InvalidateDeviceCodeSession(ctx context.Context, signature string) error {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.InvalidateDeviceCodeSession")
+	defer span.End()
+
+	/* #nosec G201 table is static */
+	return sqlcon.HandleError(
+		p.Connection(ctx).
+			RawQuery(
+				fmt.Sprintf("UPDATE %s SET active=false WHERE signature=? AND nid = ?", OAuth2RequestSQL{Table: sqlTableDeviceCode}.TableName()),
+				signature,
+				p.NetworkID(ctx),
+			).
+			Exec(),
+	)
+}
+
+func (p *Persister) CreateUserCodeSession(ctx context.Context, signature string, requester fosite.Requester) error {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.CreateUserCodeSession")
+	defer span.End()
+
+	return p.createSession(ctx, signature, requester, sqlTableUserCode)
+}
+
+func (p *Persister) GetUserCodeSession(ctx context.Context, signature string, session fosite.Session) (fosite.Requester, error) {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.GetUserCodeSession")
+	defer span.End()
+
+	return p.findSessionBySignature(ctx, signature, session, sqlTableUserCode)
+}
+
+func (p *Persister) InvalidateUserCodeSession(ctx context.Context, signature string) error {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.InvalidateUserCodeSession")
+	defer span.End()
+
+	/* #nosec G201 table is static */
+	return sqlcon.HandleError(
+		p.Connection(ctx).
+			RawQuery(
+				fmt.Sprintf("UPDATE %s SET active=false WHERE signature=? AND nid = ?", OAuth2RequestSQL{Table: sqlTableUserCode}.TableName()),
+				signature,
+				p.NetworkID(ctx),
+			).
+			Exec(),
 	)
 }

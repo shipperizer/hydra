@@ -27,6 +27,13 @@ type ApiDiscoverJsonWebKeysRequest struct {
 	ApiService *WellknownApiService
 }
 
+type ApiUpdateOAuth2ClientLifespansRequest struct {
+	ctx                         context.Context
+	ApiService                  *AdminApiService
+	id                          string
+	updateOAuth2ClientLifespans *UpdateOAuth2ClientLifespans
+}
+
 func (r ApiDiscoverJsonWebKeysRequest) Execute() (*JsonWebKeySet, *http.Response, error) {
 	return r.ApiService.DiscoverJsonWebKeysExecute(r)
 }
